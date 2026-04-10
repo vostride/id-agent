@@ -43,6 +43,7 @@
     "uuid-alternative"
   ],
   "license": "MIT",
+  "packageManager": "pnpm@10.6.1",
   "engines": {
     "node": ">=18"
   },
