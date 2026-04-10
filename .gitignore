@@ -1,0 +1,6 @@
+.planning/
+node_modules/
+dist/
+*.tsbuildinfo
+.dprint/
+.claude/

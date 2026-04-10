@@ -1,0 +1,88 @@
+{
+  "name": "id-agent",
+  "version": "1.0.0",
+  "description": "Human-readable, token-efficient IDs for AI agent systems",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vostride/id-agent.git"
+  },
+  "homepage": "https://github.com/vostride/id-agent#readme",
+  "bugs": {
+    "url": "https://github.com/vostride/id-agent/issues"
+  },
+  "keywords": [
+    "id",
+    "identifier",
+    "token-efficient",
+    "llm",
+    "ai",
+    "agent",
+    "human-readable",
+    "collision-resistant",
+    "uuid-alternative"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint src/",
+    "format": "dprint fmt",
+    "format:check": "dprint check",
+    "size": "size-limit",
+    "publint": "publint",
+    "attw": "attw --pack",
+    "validate": "npx tsx scripts/validate-wordlist.ts",
+    "build:wordlist": "npx tsx scripts/build-wordlist.ts"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "dprint"
+    ]
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.2",
+    "@size-limit/file": "12.0.1",
+    "@types/node": "^25.5.2",
+    "@vitest/coverage-v8": "4.1.4",
+    "an-array-of-english-words": "^2.0.0",
+    "dprint": "0.54.0",
+    "js-tiktoken": "1.0.21",
+    "obscenity": "0.4.6",
+    "oxlint": "1.59.0",
+    "publint": "0.3.18",
+    "size-limit": "12.0.1",
+    "tsup": "8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.4"
+  },
+  "dependencies": {
+    "zod": "4.3.6"
+  }
+}
