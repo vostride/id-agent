@@ -3,29 +3,64 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
     environment: npm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
       - uses: pnpm/action-setup@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm test
       - run: pnpm build
       - run: pnpm publint
       - run: npm publish --provenance --ignore-scripts --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - uses: softprops/action-gh-release@v2
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
         with:
-          generate_release_notes: true
+          fetch-depth: 0
+
+      - name: Generate changelog
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            CHANGES=$(git log --oneline --pretty=format:"- %s" "$TAG")
+          else
+            CHANGES=$(git log --oneline --pretty=format:"- %s" "${PREV_TAG}..${TAG}")
+          fi
+          echo "$CHANGES" > /tmp/changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          body_path: /tmp/changelog.md

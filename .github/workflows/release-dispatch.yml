@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: Version bump type
+        description: "Version bump type"
         required: true
         type: choice
         options:
@@ -12,23 +12,50 @@ on:
           - minor
           - major
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   version:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
       - uses: pnpm/action-setup@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
-      - run: |
+
+      - name: Configure git
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          npm version ${{ github.event.inputs.bump }} -m "release: v%s"
-          git push --follow-tags
+
+      - name: Bump version
+        id: bump
+        run: |
+          npm version ${{ inputs.bump }} --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and tag
+        run: |
+          git add package.json
+          git commit -m "release: v${{ steps.bump.outputs.version }}"
+          git tag "v${{ steps.bump.outputs.version }}"
+
+      - name: Push
+        run: |
+          git push origin main
+          git push origin "v${{ steps.bump.outputs.version }}"
+
+      - name: Trigger release workflow
+        run: gh workflow run release.yml -f tag="v${{ steps.bump.outputs.version }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
