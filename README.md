@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/id-agent.png" alt="id-agent — Token efficient IDs for AI agents" width="80%" />
+  <img src="docs/id-agent.png" alt="id-agent — Token efficient IDs for AI agents" width="100%" />
 </p>
 
 
