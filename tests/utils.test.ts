@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { selectRandomWords } from '../src/crypto'
 import { formatId } from '../src/format'
 
@@ -48,4 +48,3 @@ describe('formatId', () => {
     expect(formatId('x', 'a')).toBe('x_a')
   })
 })
-

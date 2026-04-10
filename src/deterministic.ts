@@ -1,7 +1,7 @@
-import type { IdAgentFromOptions } from './types'
-import { IdAgentFromOptionsSchema } from './schemas'
-import { WORDLIST } from './wordlist'
 import { formatId } from './format'
+import { IdAgentFromOptionsSchema } from './schemas'
+import type { IdAgentFromOptions } from './types'
+import { WORDLIST } from './wordlist'
 
 export async function deterministicId(input: string, opts?: IdAgentFromOptions): Promise<string> {
   if (!input || typeof input !== 'string') {
@@ -17,7 +17,11 @@ export async function deterministicId(input: string, opts?: IdAgentFromOptions):
   const enc = new TextEncoder()
   const keyData = enc.encode(validated.namespace ?? 'id-agent')
   const key = await globalThis.crypto.subtle.importKey(
-    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
   )
   const sig = await globalThis.crypto.subtle.sign('HMAC', key, enc.encode(input))
   const view = new DataView(sig)

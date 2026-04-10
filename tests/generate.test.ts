@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { idAgent } from '../src/generate'
-import { WORDLIST } from '../src/wordlist'
 import { parse, validate } from '../src/parse'
+import { WORDLIST } from '../src/wordlist'
 
 describe('random readable generation', () => {
   it('returns 8 hyphen-separated words by default', () => {

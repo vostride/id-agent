@@ -1,6 +1,6 @@
-import type { AliasMap, AliasOptions } from './types'
-import { AliasOptionsSchema } from './schemas'
 import { selectRandomWords } from './crypto'
+import { AliasOptionsSchema } from './schemas'
+import type { AliasMap, AliasOptions } from './types'
 import { WORDLIST } from './wordlist'
 
 export function createAliasMap(opts: AliasOptions): AliasMap {

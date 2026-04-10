@@ -1,8 +1,8 @@
-import type { IdAgent, IdAgentFromOptions, IdAgentOptions } from './types'
-import { IdAgentOptionsSchema } from './schemas'
 import { selectRandomWords } from './crypto'
 import { deterministicId } from './deterministic'
 import { formatId } from './format'
+import { IdAgentOptionsSchema } from './schemas'
+import type { IdAgent, IdAgentFromOptions, IdAgentOptions } from './types'
 import { WORDLIST } from './wordlist'
 
 function createIdAgent(): IdAgent {

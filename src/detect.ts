@@ -1,4 +1,4 @@
-import type { Duplicate, DetectOptions } from './types'
+import type { DetectOptions, Duplicate } from './types'
 
 export function detectDuplicates(opts: DetectOptions): Duplicate[] {
   const texts = typeof opts.text === 'string' ? [opts.text] : opts.text

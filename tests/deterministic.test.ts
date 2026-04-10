@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { deterministicId } from '../src/deterministic'
 import { idAgent } from '../src/generate'
 import { idAgent as publicIdAgent } from '../src/index'
