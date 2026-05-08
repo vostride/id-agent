@@ -1,0 +1,11 @@
+.planning/
+tests/
+scripts/
+src/
+.github/
+.oxlintrc.json
+dprint.json
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+.size-limit.json
