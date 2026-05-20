@@ -1,66 +1,200 @@
 name: Release
 
+run-name: Release ${{ inputs.bump }} by @${{ github.actor }}
+
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to release (e.g. v1.0.0)"
+      bump:
+        description: Release bump
         required: true
-        type: string
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
   id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     environment: npm
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v5
-      - uses: actions/setup-node@v5
+
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: pnpm
+          package-manager-cache: false
+
+      - name: Use latest npm CLI
+        run: npm install -g npm@latest
+
+      - name: Verify npm trusted publishing minimum
+        run: |
+          set -euo pipefail
+          node --version
+          NPM_VERSION=$(npm --version)
+          node - "$NPM_VERSION" <<'NODE'
+          const actual = process.argv[2]
+          const [major, minor, patch] = actual.split('.').map(Number)
+          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)))
+          if (!ok) {
+            console.error(`npm ${actual} is below the Trusted Publishing minimum 11.5.1`)
+            process.exit(1)
+          }
+          NODE
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Write release version
+        id: version
+        env:
+          INPUT_BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
+            echo "Release workflow must be dispatched from a branch, not '$GITHUB_REF_TYPE'." >&2
+            exit 1
+          fi
+
+          case "$INPUT_BUMP" in
+            patch|minor|major) ;;
+            *)
+              echo "Unsupported release bump '$INPUT_BUMP'. Use patch, minor, or major." >&2
+              exit 1
+              ;;
+          esac
+
+          VERSION=$(node <<'NODE'
+          const fs = require('node:fs')
+
+          const bump = process.env.INPUT_BUMP
+          const packagePath = 'package.json'
+          const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
+          const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(pkg.version)
+
+          if (!match) {
+            console.error(`package.json version '${pkg.version}' is not a plain semver x.y.z version`)
+            process.exit(1)
+          }
+
+          let major = Number(match[1])
+          let minor = Number(match[2])
+          let patch = Number(match[3])
+
+          if (bump === 'patch') {
+            patch += 1
+          } else if (bump === 'minor') {
+            minor += 1
+            patch = 0
+          } else if (bump === 'major') {
+            major += 1
+            minor = 0
+            patch = 0
+          } else {
+            console.error(`Unsupported release bump '${bump}'`)
+            process.exit(1)
+          }
+
+          pkg.version = `${major}.${minor}.${patch}`
+          fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`)
+          console.log(pkg.version)
+          NODE
+          )
+
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to compute release version." >&2
+            exit 1
+          fi
+
+          if npm view "id-agent@$VERSION" version --silent >/tmp/npm-version.txt 2>/dev/null; then
+            echo "id-agent@$VERSION is already published on npm." >&2
+            cat /tmp/npm-version.txt >&2
+            exit 1
+          fi
+
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists." >&2
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm size
       - run: pnpm publint
-      - run: npm publish --provenance --ignore-scripts --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: pnpm attw --pack
 
-  github-release:
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Generate changelog
+      - name: Validate npm package contents
         run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
-          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | sed -n '2p')
-          if [ -z "$PREV_TAG" ]; then
-            CHANGES=$(git log --oneline --pretty=format:"- %s" "$TAG")
-          else
-            CHANGES=$(git log --oneline --pretty=format:"- %s" "${PREV_TAG}..${TAG}")
-          fi
-          echo "$CHANGES" > /tmp/changelog.md
+          set -euo pipefail
+          npm pack --dry-run --json > /tmp/npm-pack.json
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const pack = JSON.parse(fs.readFileSync('/tmp/npm-pack.json', 'utf8'))
+          const files = new Set(pack[0].files.map((file) => file.path))
+          const paths = [...files]
+          const required = ['README.md', 'LICENSE', 'package.json']
+          const forbidden = ['.planning/', '.github/', 'src/', 'tests/', 'scripts/']
+
+          for (const file of required) {
+            if (!files.has(file)) {
+              console.error(`Missing expected package file: ${file}`)
+              process.exit(1)
+            }
+          }
+
+          if (!paths.some((file) => file.startsWith('dist/'))) {
+            console.error('Missing dist/ files from package tarball')
+            process.exit(1)
+          }
+
+          const leaked = paths.filter((file) => forbidden.some((prefix) => file.startsWith(prefix)))
+          if (leaked.length > 0) {
+            console.error(`Unexpected package files: ${leaked.join(', ')}`)
+            process.exit(1)
+          }
+          NODE
+
+      - name: Create release commit and tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "release: v$VERSION"
+          git tag -a "$TAG" -m "release: $TAG"
+
+      - name: Push release commit and tag
+        run: git push origin "HEAD:$GITHUB_REF_NAME" "$TAG"
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          body_path: /tmp/changelog.md
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true

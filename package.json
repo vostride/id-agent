@@ -43,6 +43,10 @@
     "uuid-alternative"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "packageManager": "pnpm@10.6.1",
   "engines": {
     "node": ">=18"
