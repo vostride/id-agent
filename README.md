@@ -1,13 +1,21 @@
-<p align="center">
-  <img src="docs/id-agent.png" alt="id-agent — Token efficient IDs for AI agents" width="100%" />
-</p>
+<div align="center">
+  <img src="https://raw.githubusercontent.com/vostride/id-agent/main/docs/id-agent.png" alt="id-agent - Token efficient IDs for AI agents" />
 
+  [![Featured on Hacker News](https://img.shields.io/badge/Hacker%20News-featured-ff6600?style=flat&logo=ycombinator&logoColor=white&colorA=13110f)](https://news.ycombinator.com/item?id=48191852)
+  [![npm](https://img.shields.io/npm/dm/id-agent?style=flat&colorA=13110f&colorB=196872)](https://npm.chart.dev/id-agent?primary=neutral&gray=neutral&theme=dark)
+  [![npm version](https://img.shields.io/npm/v/id-agent.svg?style=flat&colorA=13110f&colorB=196872)](https://www.npmjs.com/package/id-agent)
+  [![GitHub stars](https://img.shields.io/github/stars/vostride/id-agent?style=flat&colorA=13110f&colorB=196872)](https://github.com/vostride/id-agent/stargazers)
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/id-agent"><img src="https://img.shields.io/npm/v/id-agent" alt="npm version" /></a>
-  <a href="https://github.com/vostride/id-agent/actions/workflows/ci.yml"><img src="https://github.com/vostride/id-agent/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://bundlephobia.com/package/id-agent"><img src="https://img.shields.io/bundlephobia/minzip/id-agent" alt="bundle size" /></a>
-</p>
+  <p>
+    <a href="#api-reference">Docs</a>
+    ·
+    <a href="#quick-start">Quick Start</a>
+    ·
+    <a href="https://www.npmjs.com/package/id-agent">npm</a>
+    ·
+    <a href="https://vostride.com">Vostride AI</a>
+  </p>
+</div>
 
 # id-agent
 > Token efficient IDs for AI agents 
