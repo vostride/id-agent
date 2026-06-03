@@ -44,8 +44,8 @@ Where UUIDs cost about 23 tokens and get hallucinated by LLMs, id-agent produces
 
 <table align="center">
   <tr>
-    <td align="center"><img src="docs/id-agent-tokenizer.png" alt="id-agent: 12 tokens for 8 words" width="100%" /><br/><strong>id-agent</strong> - 8 words, 43 chars, <strong>12 tokens</strong></td>
-    <td align="center"><img src="docs/uuid-tokenizer.png" alt="UUID v4: 26 tokens" width="100%" /><br/><strong>UUID v4</strong> - 36 chars, <strong>26 tokens</strong></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/vostride/id-agent/main/docs/id-agent-tokenizer.png" alt="id-agent: 12 tokens for 8 words" width="100%" /><br/><strong>id-agent</strong> - 8 words, 43 chars, <strong>12 tokens</strong></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/vostride/id-agent/main/docs/uuid-tokenizer.png" alt="UUID v4: 26 tokens" width="100%" /><br/><strong>UUID v4</strong> - 36 chars, <strong>26 tokens</strong></td>
   </tr>
 </table>
 
