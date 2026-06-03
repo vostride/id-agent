@@ -15,26 +15,314 @@ on:
           - major
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 concurrency:
   group: release-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
-    environment: npm
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Use latest npm CLI
+        run: npm install -g npm@latest
+
+      - name: Verify npm trusted publishing minimum
+        run: |
+          set -euo pipefail
+          node --version
+          NPM_VERSION=$(npm --version)
+          node - "$NPM_VERSION" <<'NODE'
+          const actual = process.argv[2]
+          const [major, minor, patch] = actual.split('.').map(Number)
+          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)))
+          if (!ok) {
+            console.error(`npm ${actual} is below the Trusted Publishing minimum 11.5.1`)
+            process.exit(1)
+          }
+          NODE
+
+      - name: Write release version
+        id: version
+        env:
+          INPUT_BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
+            echo "Release workflow must be dispatched from a branch, not '$GITHUB_REF_TYPE'." >&2
+            exit 1
+          fi
+
+          case "$INPUT_BUMP" in
+            patch|minor|major) ;;
+            *)
+              echo "Unsupported release bump '$INPUT_BUMP'. Use patch, minor, or major." >&2
+              exit 1
+              ;;
+          esac
+
+          VERSION=$(python <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import re
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          bump = os.environ["INPUT_BUMP"]
+          package_path = Path("js/package.json")
+          pyproject_path = Path("python/pyproject.toml")
+
+          package_data = json.loads(package_path.read_text(encoding="utf-8"))
+          js_version = package_data.get("version")
+          pyproject_text = pyproject_path.read_text(encoding="utf-8")
+          pyproject_data = tomllib.loads(pyproject_text)
+          python_version = pyproject_data.get("project", {}).get("version")
+
+          semver = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+          match = semver.fullmatch(str(js_version))
+          if match is None:
+              print(
+                  f"js/package.json version {js_version!r} is not a plain semver x.y.z version",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          if python_version != js_version:
+              print(
+                  "JS and Python package versions must match before release: "
+                  f"js/package.json={js_version!r}, python/pyproject.toml={python_version!r}",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+
+          major, minor, patch = (int(part) for part in match.groups())
+          if bump == "patch":
+              patch += 1
+          elif bump == "minor":
+              minor += 1
+              patch = 0
+          elif bump == "major":
+              major += 1
+              minor = 0
+              patch = 0
+          else:
+              print(f"Unsupported release bump {bump!r}", file=sys.stderr)
+              sys.exit(1)
+
+          target = f"{major}.{minor}.{patch}"
+          package_data["version"] = target
+          package_path.write_text(f"{json.dumps(package_data, indent=2)}\n", encoding="utf-8")
+
+          version_line = re.compile(
+              rf'(?m)^version = "{re.escape(str(python_version))}"$'
+          )
+          pyproject_text, replacements = version_line.subn(
+              f'version = "{target}"',
+              pyproject_text,
+          )
+          if replacements != 1:
+              print(
+                  "Expected exactly one python/pyproject.toml project version line "
+                  f"for {python_version!r}; found {replacements}",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+          pyproject_path.write_text(pyproject_text, encoding="utf-8")
+
+          print(target)
+          PY
+          )
+
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to compute release version." >&2
+            exit 1
+          fi
+
+          if npm view "id-agent@$VERSION" version --silent >/tmp/npm-version.txt 2>/dev/null; then
+            echo "id-agent@$VERSION is already published on npm." >&2
+            cat /tmp/npm-version.txt >&2
+            exit 1
+          fi
+
+          set +e
+          python - "$VERSION" <<'PY'
+          from __future__ import annotations
+
+          import json
+          import sys
+          import urllib.error
+          import urllib.request
+
+          version = sys.argv[1]
+          url = "https://pypi.org/pypi/id-agent/json"
+
+          try:
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  if response.status != 200:
+                      print(
+                          f"Expected PyPI project id-agent lookup to return 200, got {response.status}.",
+                          file=sys.stderr,
+                      )
+                      sys.exit(1)
+                  project = json.loads(response.read().decode("utf-8"))
+          except urllib.error.HTTPError as error:
+              if error.code == 404:
+                  print(
+                      "PyPI project id-agent is not visible via the JSON API yet; "
+                      "continuing because first publish may be authorized by a pending trusted publisher.",
+                      file=sys.stderr,
+                  )
+                  sys.exit(0)
+              print(f"PyPI project id-agent lookup failed with HTTP {error.code}.", file=sys.stderr)
+              sys.exit(1)
+          except urllib.error.URLError as error:
+              print(f"PyPI project id-agent lookup failed: {error}.", file=sys.stderr)
+              sys.exit(1)
+
+          releases = project.get("releases")
+          if not isinstance(releases, dict):
+              print("PyPI project id-agent JSON response did not include a releases object.", file=sys.stderr)
+              sys.exit(1)
+
+          if version in releases:
+              sys.exit(42)
+          PY
+          PYPI_STATUS=$?
+          set -e
+          if [[ "$PYPI_STATUS" -eq 42 ]]; then
+            echo "id-agent==$VERSION is already published on PyPI." >&2
+            exit 1
+          fi
+          if [[ "$PYPI_STATUS" -ne 0 ]]; then
+            exit "$PYPI_STATUS"
+          fi
+
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists." >&2
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: python -m pip install --upgrade pip
+        working-directory: python
+
+      - run: python -m pip install -e ".[dev]"
+        working-directory: python
+
+      - run: pnpm --dir js lint
+      - run: pnpm --dir js format:check
+      - run: pnpm --dir js build
+      - run: pnpm --dir js test
+      - run: pnpm --dir js size
+      - run: pnpm --dir js publint
+      - run: pnpm --dir js attw
+
+      - run: python -m ruff check .
+        working-directory: python
+
+      - run: python -m ruff format --check .
+        working-directory: python
+
+      - run: python -m pytest
+        working-directory: python
+
+      - name: Validate npm package contents
+        id: package
+        run: |
+          set -euo pipefail
+          PACKAGE_DIR="$RUNNER_TEMP/id-agent-package"
+          PACKAGE_LOG="$RUNNER_TEMP/id-agent-package.txt"
+          mkdir -p "$PACKAGE_DIR"
+
+          pnpm --dir js exec node scripts/validate-package.mjs --pack-destination "$PACKAGE_DIR" | tee "$PACKAGE_LOG"
+
+          TARBALL=$(grep '^tarball=' "$PACKAGE_LOG" | tail -n 1 | cut -d= -f2-)
+          if [[ -z "$TARBALL" || ! -f "$TARBALL" ]]; then
+            echo "Validated package tarball was not produced." >&2
+            exit 1
+          fi
+
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - run: python scripts/build_package.py
+        working-directory: python
+
+      - run: python scripts/validate_package.py
+        working-directory: python
+
+      - name: Create release commit and tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add js/package.json python/pyproject.toml
+          git commit -m "release: v$VERSION"
+          git tag -a "$TAG" -m "release: $TAG"
+
+      - name: Push release commit and tag
+        run: git push origin "HEAD:$GITHUB_REF_NAME" "$TAG"
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-package
+          path: ${{ steps.package.outputs.tarball }}
+          if-no-files-found: error
+
+      - name: Upload Python dist artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: |
+            python/dist/*.whl
+            python/dist/*.tar.gz
+          if-no-files-found: error
+
+  publish-npm:
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - uses: actions/setup-node@v6
         with:
@@ -60,141 +348,73 @@ jobs:
           }
           NODE
 
-      - run: pnpm install --frozen-lockfile
-
-      - name: Write release version
-        id: version
-        env:
-          INPUT_BUMP: ${{ inputs.bump }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
-            echo "Release workflow must be dispatched from a branch, not '$GITHUB_REF_TYPE'." >&2
-            exit 1
-          fi
-
-          case "$INPUT_BUMP" in
-            patch|minor|major) ;;
-            *)
-              echo "Unsupported release bump '$INPUT_BUMP'. Use patch, minor, or major." >&2
-              exit 1
-              ;;
-          esac
-
-          VERSION=$(node <<'NODE'
-          const fs = require('node:fs')
-
-          const bump = process.env.INPUT_BUMP
-          const packagePath = 'package.json'
-          const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
-          const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(pkg.version)
-
-          if (!match) {
-            console.error(`package.json version '${pkg.version}' is not a plain semver x.y.z version`)
-            process.exit(1)
-          }
-
-          let major = Number(match[1])
-          let minor = Number(match[2])
-          let patch = Number(match[3])
-
-          if (bump === 'patch') {
-            patch += 1
-          } else if (bump === 'minor') {
-            minor += 1
-            patch = 0
-          } else if (bump === 'major') {
-            major += 1
-            minor = 0
-            patch = 0
-          } else {
-            console.error(`Unsupported release bump '${bump}'`)
-            process.exit(1)
-          }
-
-          pkg.version = `${major}.${minor}.${patch}`
-          fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`)
-          console.log(pkg.version)
-          NODE
-          )
-
-          if [[ -z "$VERSION" ]]; then
-            echo "Failed to compute release version." >&2
-            exit 1
-          fi
-
-          if npm view "id-agent@$VERSION" version --silent >/tmp/npm-version.txt 2>/dev/null; then
-            echo "id-agent@$VERSION is already published on npm." >&2
-            cat /tmp/npm-version.txt >&2
-            exit 1
-          fi
-
-          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "Tag v$VERSION already exists." >&2
-            exit 1
-          fi
-
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - run: pnpm lint
-      - run: pnpm format:check
-      - run: pnpm build
-      - run: pnpm test
-      - run: pnpm size
-      - run: pnpm publint
-      - run: pnpm attw --pack
-
-      - name: Validate npm package contents
-        run: |
-          set -euo pipefail
-          npm pack --dry-run --json > /tmp/npm-pack.json
-          node - <<'NODE'
-          const fs = require('node:fs')
-          const pack = JSON.parse(fs.readFileSync('/tmp/npm-pack.json', 'utf8'))
-          const files = new Set(pack[0].files.map((file) => file.path))
-          const paths = [...files]
-          const required = ['README.md', 'LICENSE', 'package.json']
-          const forbidden = ['.planning/', '.github/', 'src/', 'tests/', 'scripts/']
-
-          for (const file of required) {
-            if (!files.has(file)) {
-              console.error(`Missing expected package file: ${file}`)
-              process.exit(1)
-            }
-          }
-
-          if (!paths.some((file) => file.startsWith('dist/'))) {
-            console.error('Missing dist/ files from package tarball')
-            process.exit(1)
-          }
-
-          const leaked = paths.filter((file) => forbidden.some((prefix) => file.startsWith(prefix)))
-          if (leaked.length > 0) {
-            console.error(`Unexpected package files: ${leaked.join(', ')}`)
-            process.exit(1)
-          }
-          NODE
-
-      - name: Create release commit and tag
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "release: v$VERSION"
-          git tag -a "$TAG" -m "release: $TAG"
-
-      - name: Push release commit and tag
-        run: git push origin "HEAD:$GITHUB_REF_NAME" "$TAG"
+      - name: Download npm package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: js/release-artifacts
 
       - name: Publish to npm with provenance
-        run: npm publish --provenance --access public
+        working-directory: js
+        run: |
+          set -euo pipefail
+          mapfile -t tarballs < <(find release-artifacts -maxdepth 1 -type f -name '*.tgz' | sort)
+          if [[ "${#tarballs[@]}" -ne 1 ]]; then
+            echo "Expected exactly one npm tarball artifact, found ${#tarballs[@]}." >&2
+            printf '%s\n' "${tarballs[@]}" >&2
+            exit 1
+          fi
+          TARBALL="${tarballs[0]}"
+          npm publish "$TARBALL" --provenance --access public
 
+  publish-pypi:
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Download Python dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: python/release-dist
+
+      - name: Validate downloaded Python dist artifacts
+        working-directory: python
+        run: |
+          set -euo pipefail
+          mapfile -t wheels < <(find release-dist -maxdepth 1 -type f -name '*.whl' | sort)
+          mapfile -t sdists < <(find release-dist -maxdepth 1 -type f -name '*.tar.gz' | sort)
+          if [[ "${#wheels[@]}" -ne 1 ]]; then
+            echo "Expected exactly one Python wheel artifact, found ${#wheels[@]}." >&2
+            printf '%s\n' "${wheels[@]}" >&2
+            exit 1
+          fi
+          if [[ "${#sdists[@]}" -ne 1 ]]; then
+            echo "Expected exactly one Python sdist artifact, found ${#sdists[@]}." >&2
+            printf '%s\n' "${sdists[@]}" >&2
+            exit 1
+          fi
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/release-dist/
+
+  github-release:
+    needs: [prepare, publish-npm, publish-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true

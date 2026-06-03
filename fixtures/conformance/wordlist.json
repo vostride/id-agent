@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "expectedLength": 4096,
+  "sha256": "b95c87d8d435c1033228ff65283afdc73e882029ba6b5e139d199303b2f39fb6",
+  "hashInput": "space-joined WORDLIST",
+  "samples": {
+    "0": "aal",
+    "1024": "dao",
+    "2048": "lac",
+    "3072": "rea",
+    "4095": "went"
+  },
+  "wordPattern": "^[a-z]{3,6}$",
+  "unique": true,
+  "sorted": true
+}

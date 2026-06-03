@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "successCases": [
+    {
+      "name": "hello-default",
+      "input": "hello",
+      "options": {},
+      "expected": "grad-abies-pace-rob-vera-axis-prep-akin"
+    },
+    {
+      "name": "hello-namespace-acme",
+      "input": "hello",
+      "options": {
+        "namespace": "acme"
+      },
+      "expected": "reen-fault-adet-crew-frame-ardu-roon-sla"
+    },
+    {
+      "name": "hello-words-3",
+      "input": "hello",
+      "options": {
+        "words": 3
+      },
+      "expected": "grad-abies-pace"
+    },
+    {
+      "name": "hello-prefix-task",
+      "input": "hello",
+      "options": {
+        "prefix": "task"
+      },
+      "expected": "task_grad-abies-pace-rob-vera-axis-prep-akin"
+    },
+    {
+      "name": "test-combined-options",
+      "input": "test",
+      "options": {
+        "namespace": "ns1",
+        "words": 5,
+        "prefix": "job"
+      },
+      "expected": "job_slug-scious-rik-token-grown"
+    }
+  ],
+  "errorCases": [
+    {
+      "name": "empty-input",
+      "input": "",
+      "options": {},
+      "errorKind": "empty-input"
+    },
+    {
+      "name": "empty-namespace",
+      "input": "hello",
+      "options": {
+        "namespace": ""
+      },
+      "errorKind": "empty-namespace"
+    },
+    {
+      "name": "invalid-prefix-uppercase",
+      "input": "hello",
+      "options": {
+        "prefix": "TASK"
+      },
+      "errorKind": "invalid-prefix"
+    }
+  ]
+}

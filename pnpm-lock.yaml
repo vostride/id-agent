@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  js:
     dependencies:
       zod:
         specifier: 4.3.6

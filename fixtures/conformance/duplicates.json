@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "single-string-repeated-id",
+      "text": "ID task_red-fox appears here and task_red-fox appears again",
+      "pattern": "task_[a-z]+-[a-z]+",
+      "expected": [
+        {
+          "id": "task_red-fox",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "list-input-first-seen-order",
+      "text": [
+        "id-a id-b",
+        "id-a id-c id-b",
+        "id-a id-b"
+      ],
+      "pattern": "id-[a-z]",
+      "expected": [
+        {
+          "id": "id-a",
+          "count": 3
+        },
+        {
+          "id": "id-b",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "name": "prefixed-id-repeated",
+      "text": [
+        "const first = 'job_slug-scious'",
+        "const second = 'job_slug-scious'"
+      ],
+      "pattern": "job_[a-z]+-[a-z]+",
+      "expected": [
+        {
+          "id": "job_slug-scious",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "name": "unique-ids-ignored",
+      "text": "task_one and task_two are unique",
+      "pattern": "task_[a-z]+",
+      "expected": []
+    },
+    {
+      "name": "empty-text",
+      "text": "",
+      "pattern": "task_\\w+",
+      "expected": []
+    }
+  ]
+}

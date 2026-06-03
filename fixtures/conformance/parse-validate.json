@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "parseCases": [
+    {
+      "name": "prefixed-hyphen-body",
+      "id": "task_storm-delta-stone",
+      "expected": {
+        "prefix": "task",
+        "words": ["storm", "delta", "stone"],
+        "wordCount": 3,
+        "bits": 36,
+        "raw": "task_storm-delta-stone",
+        "format": "readable"
+      }
+    },
+    {
+      "name": "prefixed-underscore-body",
+      "id": "task_storm_delta_stone",
+      "expected": {
+        "prefix": "task",
+        "words": ["storm", "delta", "stone"],
+        "wordCount": 3,
+        "bits": 36,
+        "raw": "task_storm_delta_stone",
+        "format": "readable"
+      }
+    },
+    {
+      "name": "single-word-body",
+      "id": "ace",
+      "expected": {
+        "prefix": null,
+        "words": ["ace"],
+        "wordCount": 1,
+        "bits": 12,
+        "raw": "ace",
+        "format": "readable"
+      }
+    },
+    {
+      "name": "unknown-word-still-parses",
+      "id": "ace-zzzznotaword",
+      "expected": {
+        "prefix": null,
+        "words": ["ace", "zzzznotaword"],
+        "wordCount": 2,
+        "bits": 24,
+        "raw": "ace-zzzznotaword",
+        "format": "readable"
+      }
+    },
+    {
+      "name": "invalid-uppercase",
+      "id": "Red-Fox",
+      "expected": null
+    },
+    {
+      "name": "invalid-characters",
+      "id": "ace.age",
+      "expected": null
+    },
+    {
+      "name": "empty-string",
+      "id": "",
+      "expected": null
+    }
+  ],
+  "validateCases": [
+    {
+      "name": "valid-known-words",
+      "id": "ace-age-aim",
+      "expected": {
+        "valid": true,
+        "prefix": null,
+        "wordCount": 3,
+        "words": ["ace", "age", "aim"]
+      }
+    },
+    {
+      "name": "valid-prefixed-known-words",
+      "id": "task_red-fox",
+      "expected": {
+        "valid": true,
+        "prefix": "task",
+        "wordCount": 2,
+        "words": ["red", "fox"]
+      }
+    },
+    {
+      "name": "validate-invalid-uppercase",
+      "id": "Red-Fox",
+      "expected": {
+        "valid": false,
+        "reason": "contains uppercase characters"
+      }
+    },
+    {
+      "name": "validate-invalid-characters",
+      "id": "ace.age",
+      "expected": {
+        "valid": false,
+        "reason": "contains invalid characters"
+      }
+    },
+    {
+      "name": "validate-empty-string",
+      "id": "",
+      "expected": {
+        "valid": false,
+        "reason": "empty string"
+      }
+    },
+    {
+      "name": "validate-unknown-word",
+      "id": "ace-zzzznotaword",
+      "expected": {
+        "valid": false,
+        "reason": "unknown words: zzzznotaword",
+        "unknownWords": ["zzzznotaword"]
+      }
+    }
+  ]
+}

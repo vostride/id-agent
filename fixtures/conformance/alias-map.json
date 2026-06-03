@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "set-shape",
+      "words": 3,
+      "original": "some-uuid",
+      "expected": {
+        "aliasWordCount": 3,
+        "aliasWordsInWordlist": true,
+        "size": 1
+      }
+    },
+    {
+      "name": "idempotent-set",
+      "words": 3,
+      "original": "uuid-abc",
+      "expected": {
+        "sameAliasOnRepeatedSet": true,
+        "size": 1
+      }
+    },
+    {
+      "name": "entries-order",
+      "words": 2,
+      "originals": ["orig-1", "orig-2"],
+      "expected": {
+        "entryOriginals": ["orig-1", "orig-2"],
+        "size": 2
+      }
+    },
+    {
+      "name": "replace-restore",
+      "words": 3,
+      "text": "Process dc193952-186a-4645-a2c4-ebdadbc9a411 sent to 6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+      "expected": {
+        "registered": 2,
+        "restoreRoundTrip": true
+      }
+    },
+    {
+      "name": "allow-collision-option",
+      "words": 2,
+      "allowCollision": true,
+      "original": "test-id",
+      "expected": {
+        "aliasWordCount": 2,
+        "size": 1
+      }
+    }
+  ]
+}
