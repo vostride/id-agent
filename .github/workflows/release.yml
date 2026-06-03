@@ -364,7 +364,7 @@ jobs:
             printf '%s\n' "${tarballs[@]}" >&2
             exit 1
           fi
-          TARBALL="${tarballs[0]}"
+          TARBALL="$(realpath "${tarballs[0]}")"
           npm publish "$TARBALL" --provenance --access public
 
   publish-pypi:
