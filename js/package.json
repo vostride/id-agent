@@ -1,6 +1,6 @@
 {
   "name": "id-agent",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Human-readable, token-efficient IDs for AI agent systems",
   "type": "module",
   "main": "./dist/index.cjs",
