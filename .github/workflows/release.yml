@@ -317,6 +317,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm
     permissions:
+      actions: read
       contents: read
       id-token: write
     steps:
@@ -372,6 +373,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      actions: read
       contents: read
       id-token: write
     steps:
