@@ -21,7 +21,7 @@
 
 # id-agent
 
-> Token efficient IDs for AI agents.
+> Token efficient IDs for AI agents. UUID alternative for the agentic era.
 
 AI agents pass IDs through prompts, tool calls, logs, traces, and memory. UUIDs are great for databases, but they are expensive in context windows and hard for humans or LLMs to copy reliably. id-agent gives you word-based IDs that are compact in modern tokenizers, readable in logs, and configurable by collision budget.
 

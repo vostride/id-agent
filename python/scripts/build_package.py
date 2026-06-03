@@ -58,14 +58,18 @@ def _ignore_package_tree_entries(_directory: str, names: list[str]) -> set[str]:
 
 def _rewrite_staged_pyproject(pyproject_path: Path) -> None:
     text = pyproject_path.read_text(encoding="utf-8")
-    old_readme = (
-        'readme = { text = "id-agent is a human-readable, token-efficient ID library '
-        "for AI agent systems. Full documentation lives in the root README at "
-        'https://github.com/vostride/id-agent#readme.", content-type = "text/markdown" }'
-    )
-    if old_readme not in text:
-        raise RuntimeError("expected inline project.readme metadata was not found")
-    text = text.replace(old_readme, 'readme = "README.md"')
+    lines = text.splitlines()
+    readme_replacements = 0
+    for index, line in enumerate(lines):
+        if line.startswith("readme = { text = "):
+            lines[index] = 'readme = "README.md"'
+            readme_replacements += 1
+    if readme_replacements != 1:
+        raise RuntimeError(
+            "expected exactly one inline project.readme metadata entry, "
+            f"found {readme_replacements}"
+        )
+    text = "\n".join(lines) + "\n"
 
     old_license = 'license = "MIT"'
     if old_license not in text:
