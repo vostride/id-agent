@@ -1,27 +1,22 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/vostride/id-agent/main/docs/id-agent.png" alt="id-agent - Token efficient IDs for AI agents" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vostride/id-agent/main/docs/banner-dark.jpg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vostride/id-agent/main/docs/banner-light.jpg">
+  <img src="https://raw.githubusercontent.com/vostride/id-agent/main/docs/banner-light.jpg" alt="id-agent by vostride — token efficient IDs for AI agents, a UUID alternative for the agentic era" width="100%">
+</picture>
 
-  [![Featured on Hacker News](https://img.shields.io/badge/Hacker%20News-featured-ff6600?style=flat&logo=ycombinator&logoColor=white&colorA=13110f)](https://news.ycombinator.com/item?id=48191852)
-  [![npm](https://img.shields.io/npm/dm/id-agent?style=flat&colorA=13110f&colorB=196872)](https://npm.chart.dev/id-agent?primary=neutral&gray=neutral&theme=dark)
-  [![npm version](https://img.shields.io/npm/v/id-agent.svg?style=flat&colorA=13110f&colorB=196872)](https://www.npmjs.com/package/id-agent)
-  [![GitHub stars](https://img.shields.io/github/stars/vostride/id-agent?style=flat&colorA=13110f&colorB=196872)](https://github.com/vostride/id-agent/stargazers)
+<p align="center">
+  <a href="https://news.ycombinator.com/item?id=48191852"><img src="https://img.shields.io/badge/Hacker%20News-featured-ff6600?logo=ycombinator&amp;logoColor=white" alt="Featured on Hacker News"></a>
+  <a href="https://www.npmjs.com/package/id-agent"><img src="https://img.shields.io/npm/v/id-agent?color=196872" alt="npm version"></a>
+  <a href="https://npm.chart.dev/id-agent?primary=neutral&amp;gray=neutral&amp;theme=dark"><img src="https://img.shields.io/npm/dm/id-agent?color=196872" alt="npm downloads per month"></a>
+  <a href="https://pypi.org/project/id-agent/"><img src="https://img.shields.io/pypi/v/id-agent?color=196872" alt="PyPI version"></a>
+  <a href="https://github.com/vostride/id-agent/stargazers"><img src="https://img.shields.io/github/stars/vostride/id-agent?color=196872" alt="GitHub stars"></a>
+  <a href="https://github.com/vostride/id-agent/actions/workflows/ci.yml"><img src="https://github.com/vostride/id-agent/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/vostride/id-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-196872" alt="License: MIT"></a>
+</p>
 
-  <p>
-    <a href="#the-math">The Math</a>
-    ·
-    <a href="#javascript--typescript">JavaScript</a>
-    ·
-    <a href="#python">Python</a>
-    ·
-    <a href="https://www.npmjs.com/package/id-agent">npm</a>
-    ·
-    <a href="https://vostride.com">Vostride AI</a>
-  </p>
-</div>
-
-# id-agent
-
-> Token efficient IDs for AI agents. UUID alternative for the agentic era.
+<p align="center">
+  <a href="#the-math">The Math</a> · <a href="#javascript--typescript">JavaScript</a> · <a href="#python">Python</a> · <a href="#used-by">Used by</a> · <a href="https://www.npmjs.com/package/id-agent">npm</a> · <a href="https://pypi.org/project/id-agent/">PyPI</a> · <a href="https://vostride.com">Vostride AI</a>
+</p>
 
 AI agents pass IDs through prompts, tool calls, logs, traces, and memory. UUIDs are great for databases, but they are expensive in context windows and hard for humans or LLMs to copy reliably. id-agent gives you word-based IDs that are compact in modern tokenizers, readable in logs, and configurable by collision budget.
 
@@ -31,6 +26,13 @@ Where UUIDs cost about 23 tokens and get hallucinated by LLMs, id-agent produces
 - **Token-efficient** -- every word in the wordlist is exactly 1 BPE token on o200k_base.
 - **Collision-safe** -- configurable entropy from about 12 to 192 bits.
 - **Validated inputs** -- descriptive validation on all public APIs.
+
+## Used by
+
+- **[agent-qa](https://github.com/vostride/agent-qa)** -- open-source, self-improving QA agent by Vostride. Its test, suite, run, and observation IDs come from id-agent.
+- **[Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync)** -- Nutstore's (坚果云) Obsidian sync plugin. Its built-in AI assistant uses id-agent for chat session, agent task, and tool result IDs.
+
+Using id-agent in your project? [Open a pull request](https://github.com/vostride/id-agent/edit/main/README.md) to add it here.
 
 ## The Math
 
