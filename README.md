@@ -498,4 +498,4 @@ isinstance(WORDLIST, tuple)   # => True
 
 ## License
 
-MIT
+[MIT](https://github.com/vostride/id-agent/blob/main/LICENSE)
