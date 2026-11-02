@@ -131,10 +131,12 @@ async function validateReadmeMarkers(readmePath) {
 
 function parsePackJson(output) {
   const pack = JSON.parse(output)
-  if (!Array.isArray(pack) || pack.length === 0) {
+  // npm 11 prints an array of entries, npm 12 an object keyed by package name
+  const entries = Array.isArray(pack) ? pack : Object.values(pack ?? {})
+  if (entries.length === 0) {
     throw new Error('npm pack returned no package entries')
   }
-  return pack[0]
+  return entries[0]
 }
 
 function validateFiles(packEntry) {
