@@ -12,3 +12,4 @@ __pycache__/
 .venv/
 *.egg-info/
 build/
+.DS_Store
