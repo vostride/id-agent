@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "id-agent"
-version = "1.2.0"
+version = "1.2.1"
 description = "Token efficient IDs for AI agents. UUID alternative for the agentic era"
 readme = { text = "Token efficient IDs for AI agents. UUID alternative for the agentic era. Full documentation lives in the root README at https://github.com/vostride/id-agent#readme.", content-type = "text/markdown" }
 requires-python = ">=3.10"
