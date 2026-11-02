@@ -65,23 +65,23 @@
     "build:wordlist": "npx tsx scripts/build-wordlist.ts"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "0.18.2",
-    "@size-limit/file": "12.0.1",
-    "@types/node": "^25.5.2",
-    "@vitest/coverage-v8": "4.1.4",
+    "@arethetypeswrong/cli": "0.18.5",
+    "@size-limit/file": "14.3.0",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "5.0.5",
     "an-array-of-english-words": "^2.0.0",
-    "dprint": "0.54.0",
+    "dprint": "0.64.3",
     "js-tiktoken": "1.0.21",
     "obscenity": "0.4.6",
-    "oxlint": "1.59.0",
-    "publint": "0.3.18",
-    "size-limit": "12.0.1",
-    "tsup": "8.5.1",
-    "tsx": "^4.21.0",
-    "typescript": "5.9.3",
-    "vitest": "4.1.4"
+    "oxlint": "1.90.0",
+    "publint": "0.3.25",
+    "size-limit": "14.3.0",
+    "tsup": "9.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
   },
   "dependencies": {
-    "zod": "4.3.6"
+    "zod": "^4.6.7"
   }
 }
